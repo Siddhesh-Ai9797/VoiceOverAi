@@ -1,26 +1,98 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-mono:    'Fira Code', monospace;
+  --color-navy-950: #040d21;
+  --color-navy-900: #071330;
+  --color-navy-800: #0d1f4a;
+  --color-navy-700: #1e3a8a;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-success: #10b981;
+  --color-error:   #ef4444;
+  --color-warning: #f59e0b;
+  --color-text-primary:   #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted:     #475569;
+  --color-border-base:   #1e3a8a;
+  --color-border-subtle: #0d1f4a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #040d21;
+  color: #e2e8f0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #e2e8f0;
+}
+
+code, pre, .mono {
+  font-family: var(--font-mono), monospace;
+}
+
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: #040d21; }
+::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #e2e8f0;
+}
+
+.card {
+  background-color: #071330;
+  border: 0.5px solid #1e3a8a;
+  border-radius: 12px;
+}
+
+.divider {
+  height: 0.5px;
+  background: #0d1f4a;
+  width: 100%;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.animate-spin-slow { animation: spin 1s linear infinite; }
+.animate-pulse-dot { animation: pulse-dot 1.3s ease-in-out infinite; }
+.animate-fade-up   { animation: fade-up 0.3s ease forwards; }
