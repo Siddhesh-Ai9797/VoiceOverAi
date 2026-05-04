@@ -14,17 +14,19 @@ export async function GET(
   }
 
   const { id } = await params;
-  const dbJob  = getJobById(id);
+  const dbJob  = await getJobById(id);
 
   if (!dbJob || dbJob.user_id !== session.user.id) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
   try {
-    const res = await fetch("http://localhost:8000/api/create/" + id);
+    const res = await fetch(`${backendUrl}/api/create/${id}`);
     if (res.ok) {
       const live = await res.json();
-      updateJob(id, {
+      await updateJob(id, {
         status:       live.status,
         progress:     live.progress,
         current_step: live.current_step,
