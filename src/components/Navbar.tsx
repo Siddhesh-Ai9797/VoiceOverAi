@@ -47,6 +47,7 @@ export default function Navbar() {
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}
              className="desktop-nav">
           <NavLink href="/dashboard">Dashboard</NavLink>
+          <NavLink href="/create">Create</NavLink>
           <NavLink href="/pricing">Pricing</NavLink>
 
           {/* Credits pill */}
@@ -117,6 +118,7 @@ export default function Navbar() {
           flexDirection: "column", gap: "4px",
         }}>
           <MobileLink href="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</MobileLink>
+          <MobileLink href="/create" onClick={() => setMenuOpen(false)}>Create</MobileLink>
           <MobileLink href="/pricing"   onClick={() => setMenuOpen(false)}>Pricing</MobileLink>
           <MobileLink href={session ? "/dashboard" : "/signin"}
                       onClick={() => setMenuOpen(false)}>
