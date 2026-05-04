@@ -14,34 +14,29 @@ export async function GET(
   }
 
   const { id } = await params;
-  const dbJob  = getJobById(id);
+  const dbJob  = await getJobById(id);
 
   if (!dbJob || dbJob.user_id !== session.user.id) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
   try {
-    const res = await fetch("http://localhost:8000/api/jobs/" + id);
+    const res = await fetch(`${backendUrl}/api/jobs/${id}`);
     if (res.ok) {
       const live = await res.json();
-      updateJob(id, {
+      await updateJob(id, {
         status:       live.status,
         progress:     live.progress,
         current_step: live.current_step,
-        output_url:   live.output_url   ?? undefined,
-        error:        live.error        ?? undefined,
+        output_url:   live.output_url ?? undefined,
+        error:        live.error      ?? undefined,
       });
-      return NextResponse.json({
-        ...dbJob,
-        status:       live.status,
-        progress:     live.progress,
-        current_step: live.current_step,
-        output_url:   live.output_url,
-        error:        live.error,
-      });
+      return NextResponse.json({ ...dbJob, ...live });
     }
   } catch {
-    // FastAPI unreachable — return cached SQLite data
+    // Return cached data if backend unreachable
   }
 
   return NextResponse.json(dbJob);

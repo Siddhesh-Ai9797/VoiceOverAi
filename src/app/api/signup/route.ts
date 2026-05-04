@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existing = getUserByEmail(email);
+    const existing = await getUserByEmail(email);
     if (existing) {
       return NextResponse.json(
         { error: "An account with this email already exists" },
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const hashed = await bcrypt.hash(password, 12);
-    const user   = createUser(email, hashed, name);
+    const user   = await createUser(email, hashed, name);
 
     return NextResponse.json(
       { message: "Account created", userId: user.id },

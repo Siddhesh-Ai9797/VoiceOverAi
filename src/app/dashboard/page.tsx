@@ -7,10 +7,10 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/signin");
 
-  const user = getUserById(session.user.id);
+  const user = await getUserById(session.user.id);
   if (!user) redirect("/signin");
 
-  const jobs = getJobsByUser(session.user.id);
+  const jobs = await getJobsByUser(session.user.id);
 
   return <DashboardClient user={user} jobs={jobs} />;
 }

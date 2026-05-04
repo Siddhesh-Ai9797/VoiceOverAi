@@ -1,32 +1,20 @@
-import Database from "better-sqlite3";
-import path from "path";
+import { neon } from "@neondatabase/serverless";
 
-const DB_PATH = path.join(process.cwd(), "voiceoverai.db");
+const sql = neon(process.env.DATABASE_URL!);
 
-let db: Database.Database;
-
-function getDb(): Database.Database {
-  if (!db) {
-    db = new Database(DB_PATH);
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
-    initSchema();
-  }
-  return db;
-}
-
-function initSchema() {
-  db.exec(`
+async function initSchema() {
+  await sql`
     CREATE TABLE IF NOT EXISTS users (
-      id         TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
       email      TEXT UNIQUE NOT NULL,
       password   TEXT NOT NULL,
       name       TEXT,
       plan       TEXT NOT NULL DEFAULT 'free',
       minutes_left INTEGER NOT NULL DEFAULT 30,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
+      created_at TEXT NOT NULL DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+    )
+  `;
+  await sql`
     CREATE TABLE IF NOT EXISTS jobs (
       id              TEXT PRIMARY KEY,
       user_id         TEXT NOT NULL REFERENCES users(id),
@@ -38,86 +26,110 @@ function initSchema() {
       current_step    TEXT NOT NULL DEFAULT 'queued',
       output_url      TEXT,
       error           TEXT,
-      created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+      created_at      TEXT NOT NULL DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+      updated_at      TEXT NOT NULL DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id)
+  `;
+}
 
-    CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
-    CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at DESC);
-  `);
+// Initialize schema on first import
+let initialized = false;
+async function ensureInit() {
+  if (!initialized) {
+    await initSchema();
+    initialized = true;
+  }
 }
 
 /* ── User helpers ── */
-export function createUser(email: string, hashedPassword: string, name: string) {
-  const stmt = getDb().prepare(`
+export async function createUser(email: string, hashedPassword: string, name: string) {
+  await ensureInit();
+  const rows = await sql`
     INSERT INTO users (email, password, name)
-    VALUES (?, ?, ?)
+    VALUES (${email}, ${hashedPassword}, ${name})
     RETURNING id, email, name, plan, minutes_left, created_at
-  `);
-  return stmt.get(email, hashedPassword, name) as User;
+  `;
+  return rows[0] as User;
 }
 
-export function getUserByEmail(email: string) {
-  return getDb()
-    .prepare("SELECT * FROM users WHERE email = ?")
-    .get(email) as UserWithPassword | undefined;
+export async function getUserByEmail(email: string) {
+  await ensureInit();
+  const rows = await sql`SELECT * FROM users WHERE email = ${email}`;
+  return rows[0] as UserWithPassword | undefined;
 }
 
-export function getUserById(id: string) {
-  return getDb()
-    .prepare("SELECT id, email, name, plan, minutes_left, created_at FROM users WHERE id = ?")
-    .get(id) as User | undefined;
+export async function getUserById(id: string) {
+  await ensureInit();
+  const rows = await sql`
+    SELECT id, email, name, plan, minutes_left, created_at
+    FROM users WHERE id = ${id}
+  `;
+  return rows[0] as User | undefined;
 }
 
 /* ── Job helpers ── */
-export function createJob(params: {
+export async function createJob(params: {
   id:             string;
   userId:         string;
   fileName:       string;
   targetLanguage: string;
   voiceMode:      string;
 }) {
-  getDb().prepare(`
+  await ensureInit();
+  await sql`
     INSERT INTO jobs (id, user_id, file_name, target_language, voice_mode)
-    VALUES (@id, @userId, @fileName, @targetLanguage, @voiceMode)
-  `).run(params);
+    VALUES (${params.id}, ${params.userId}, ${params.fileName},
+            ${params.targetLanguage}, ${params.voiceMode})
+  `;
 }
 
-export function updateJob(id: string, fields: Partial<{
+export async function updateJob(id: string, fields: Partial<{
   status:       string;
   progress:     number;
   current_step: string;
   output_url:   string;
   error:        string;
 }>) {
-  const sets   = Object.keys(fields).map(k => `${k} = @${k}`).join(", ");
-  const params = { id, ...fields };
-  getDb().prepare(`
-    UPDATE jobs SET ${sets}, updated_at = datetime('now') WHERE id = @id
-  `).run(params);
+  await ensureInit();
+  const entries = Object.entries(fields);
+  if (entries.length === 0) return;
+
+  for (const [key, value] of entries) {
+    if (key === "status")       await sql`UPDATE jobs SET status       = ${value as string}, updated_at = to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') WHERE id = ${id}`;
+    if (key === "progress")     await sql`UPDATE jobs SET progress     = ${value as number}, updated_at = to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') WHERE id = ${id}`;
+    if (key === "current_step") await sql`UPDATE jobs SET current_step = ${value as string}, updated_at = to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') WHERE id = ${id}`;
+    if (key === "output_url")   await sql`UPDATE jobs SET output_url   = ${value as string}, updated_at = to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') WHERE id = ${id}`;
+    if (key === "error")        await sql`UPDATE jobs SET error        = ${value as string}, updated_at = to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') WHERE id = ${id}`;
+  }
 }
 
-export function getJobsByUser(userId: string): Job[] {
-  return getDb().prepare(`
+export async function getJobsByUser(userId: string): Promise<Job[]> {
+  await ensureInit();
+  const rows = await sql`
     SELECT * FROM jobs
-    WHERE user_id = ?
+    WHERE user_id = ${userId}
     ORDER BY created_at DESC
     LIMIT 50
-  `).all(userId) as Job[];
+  `;
+  return rows as Job[];
 }
 
-export function getJobById(id: string) {
-  return getDb()
-    .prepare("SELECT * FROM jobs WHERE id = ?")
-    .get(id) as Job | undefined;
+export async function getJobById(id: string) {
+  await ensureInit();
+  const rows = await sql`SELECT * FROM jobs WHERE id = ${id}`;
+  return rows[0] as Job | undefined;
 }
 
-export function deductMinutes(userId: string, minutes: number) {
-  getDb().prepare(`
+export async function deductMinutes(userId: string, minutes: number) {
+  await ensureInit();
+  await sql`
     UPDATE users
-    SET minutes_left = MAX(0, minutes_left - ?)
-    WHERE id = ?
-  `).run(minutes, userId);
+    SET minutes_left = GREATEST(0, minutes_left - ${minutes})
+    WHERE id = ${userId}
+  `;
 }
 
 /* ── Types ── */

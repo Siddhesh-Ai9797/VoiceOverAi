@@ -15,7 +15,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        const user = getUserByEmail(credentials.email as string);
+        const user = await getUserByEmail(credentials.email as string);
         if (!user) return null;
         const valid = await bcrypt.compare(
           credentials.password as string,

@@ -3,8 +3,8 @@ import { auth } from "@/lib/auth";
 import { createJob } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 
-
 export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData();
-  const file     = formData.get("file")     as File;
+  const file     = formData.get("file")            as File;
   const lang     = formData.get("target_language") as string ?? "hi";
-  const voice    = formData.get("voice_mode")       as string ?? "standard";
+  const voice    = formData.get("voice_mode")      as string ?? "standard";
 
   if (!file) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -22,8 +22,7 @@ export async function POST(req: NextRequest) {
 
   const jobId = uuidv4();
 
-  // Save job to SQLite tied to this user
-  createJob({
+  await createJob({
     id:             jobId,
     userId:         session.user.id,
     fileName:       file.name,
@@ -31,7 +30,7 @@ export async function POST(req: NextRequest) {
     voiceMode:      voice,
   });
 
-  // Forward to FastAPI backend
+  const backendUrl  = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const backendForm = new FormData();
   backendForm.append("file",            file);
   backendForm.append("target_language", lang);
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
   backendForm.append("job_id",          jobId);
 
   try {
-    const backendRes = await fetch("http://localhost:8000/api/dub", {
+    const backendRes = await fetch(`${backendUrl}/api/dub`, {
       method: "POST",
       body:   backendForm,
     });
