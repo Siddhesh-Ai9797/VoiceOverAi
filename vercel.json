@@ -3,6 +3,10 @@
     "frontend": {
       "routePrefix": "/",
       "framework": "nextjs"
+    },
+    "backend": {
+      "entrypoint": "backend",
+      "routePrefix": "/_/backend"
     }
   }
 }
