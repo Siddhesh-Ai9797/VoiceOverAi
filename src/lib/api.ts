@@ -23,6 +23,7 @@ export async function startDubbingJob(
   const res = await fetch("/api/dub", {
     method: "POST",
     body:   form,
+    signal: AbortSignal.timeout(120000), // 2 min timeout
   });
 
   if (!res.ok) {

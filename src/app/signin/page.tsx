@@ -29,6 +29,7 @@ function SignInForm() {
       setError("Incorrect email or password. Please try again.");
       setLoading(false);
     } else {
+      router.refresh();
       router.push(callbackUrl);
     }
   };

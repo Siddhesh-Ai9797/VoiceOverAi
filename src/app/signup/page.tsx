@@ -35,6 +35,7 @@ export default function SignUp() {
       });
       if (result?.error) { setError("Account created but sign in failed. Try signing in."); setLoading(false); return; }
 
+      router.refresh();
       router.push("/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
