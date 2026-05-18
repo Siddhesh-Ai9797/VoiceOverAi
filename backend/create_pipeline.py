@@ -53,19 +53,16 @@ def generate_script(prompt: str, language_code: str, style: str, duration: int) 
 
 
 def synthesize_voice(script: str, language_code: str, output_dir: str) -> str:
-    from elevenlabs import ElevenLabs
-    client      = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
+    """Synthesize voice using OpenAI TTS."""
+    from openai import OpenAI
+    client      = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     output_path = os.path.join(output_dir, "voice.mp3")
-
-    audio_gen = client.text_to_speech.convert(
-        voice_id="pNInz6obpgDQGcFmaJgB",
-        text=script,
-        model_id="eleven_multilingual_v2",
-        voice_settings={"stability": 0.5, "similarity_boost": 0.75},
+    response    = client.audio.speech.create(
+        model="tts-1",
+        voice="alloy",
+        input=script,
     )
-    with open(output_path, "wb") as f:
-        for chunk in audio_gen:
-            f.write(chunk)
+    response.stream_to_file(output_path)
     return output_path
 
 

@@ -13,8 +13,8 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
-  const dbJob  = await getJobById(id);
+  const { id }  = await params;
+  const dbJob   = await getJobById(id);
 
   if (!dbJob || dbJob.user_id !== session.user.id) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
