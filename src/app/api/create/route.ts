@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   backendForm.append("job_id",        jobId);
 
   try {
-    const res = await fetch("http://localhost:8000/api/create", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/create`, {
       method: "POST",
       body:   backendForm,
     });
