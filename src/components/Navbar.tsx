@@ -50,17 +50,7 @@ export default function Navbar() {
           <NavLink href="/create">Create</NavLink>
           <NavLink href="/pricing">Pricing</NavLink>
 
-          {/* Credits pill */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: "6px",
-            background: "#071330", border: "0.5px solid #1e3a8a",
-            borderRadius: "8px", padding: "5px 12px", marginLeft: "6px",
-          }}>
-            <Clock size={13} color="#3b82f6" />
-            <span style={{ fontFamily: "var(--font-mono)",
-                           fontSize: "12px", color: "#94a3b8" }}>3h 12m</span>
-            <span style={{ fontSize: "12px", color: "#475569" }}>left</span>
-          </div>
+
 
           {/* Auth button */}
           {status === "loading" ? null : session ? (
