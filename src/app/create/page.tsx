@@ -555,7 +555,7 @@ export default function CreatePage() {
             {/* Action buttons */}
             <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
               <a
-                href={"http://localhost:8000/api/download/create/" + jobId}
+                href={(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") + "/api/download/create/" + jobId}
                 download
                 style={{
                   flex: 1, background: "#3b82f6", color: "#fff",

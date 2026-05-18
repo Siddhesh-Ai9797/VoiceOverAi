@@ -66,5 +66,6 @@ export async function pollJobUntilDone(
 }
 
 export function getDownloadUrl(jobId: string): string {
-  return `http://localhost:8000/api/download/${jobId}`;
+  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  return `${base}/api/download/${jobId}`;
 }

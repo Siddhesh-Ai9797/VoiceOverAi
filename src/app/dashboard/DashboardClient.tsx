@@ -302,7 +302,7 @@ export default function DashboardClient({
                   </span>
                   {job.status === "complete" && job.output_url && (
                     <a
-                      href={"http://localhost:8000" + job.output_url}
+                      href={(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") + job.output_url}
                       download
                       style={{
                         background: "transparent",
