@@ -90,19 +90,7 @@ export default function DashboardClient({
           </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            {/* Credits pill */}
-            <div style={{
-              background: "#071330", border: "0.5px solid #1e3a8a",
-              borderRadius: "8px", padding: "5px 12px",
-              display: "flex", alignItems: "center", gap: "6px",
-            }}>
-              <Clock size={13} color="#3b82f6" />
-              <span style={{ fontFamily: "var(--font-mono)",
-                             fontSize: "12px", color: "#94a3b8" }}>
-                {user.minutes_left}m
-              </span>
-              <span style={{ fontSize: "12px", color: "#475569" }}>left</span>
-            </div>
+
 
             {/* User avatar */}
             <div style={{
@@ -165,41 +153,7 @@ export default function DashboardClient({
           </Link>
         </div>
 
-        {/* Credits card */}
-        <div style={{
-          background: "#071330", border: "0.5px solid #1e3a8a",
-          borderRadius: "14px", padding: "18px 22px", marginBottom: "24px",
-        }}>
-          <div style={{ display: "flex", alignItems: "center",
-                        justifyContent: "space-between", marginBottom: "12px",
-                        flexWrap: "wrap", gap: "8px" }}>
-            <div>
-              <span style={{ fontSize: "13px", fontWeight: "600",
-                             color: "#e2e8f0", textTransform: "capitalize" }}>
-                {user.plan} plan
-              </span>
-              <span style={{ fontSize: "12px", color: "#475569", marginLeft: "8px" }}>
-                · {user.minutes_left} min remaining
-              </span>
-            </div>
-            <Link href="/pricing" style={{
-              fontSize: "12px", fontWeight: "600",
-              color: "#3b82f6", textDecoration: "none",
-            }}>
-              Upgrade →
-            </Link>
-          </div>
-          {/* Progress bar */}
-          <div style={{ background: "#0d1f4a", borderRadius: "999px",
-                        height: "6px", overflow: "hidden" }}>
-            <div style={{
-              height: "100%", borderRadius: "999px",
-              background: "linear-gradient(90deg, #3b82f6, #60a5fa)",
-              width: `${minutesBar(user.minutes_left, totalMinutes)}%`,
-              transition: "width 0.5s ease",
-            }} />
-          </div>
-        </div>
+
 
         {/* Jobs table */}
         {jobs.length === 0 ? (
