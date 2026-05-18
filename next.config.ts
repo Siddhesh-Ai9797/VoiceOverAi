@@ -3,10 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: "2gb",
+      bodySizeLimit: "10mb",
     },
   },
-  serverExternalPackages: ["better-sqlite3", "bcryptjs"],
+  serverExternalPackages: ["bcryptjs"],
 };
 
 export default nextConfig;

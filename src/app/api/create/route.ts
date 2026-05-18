@@ -4,6 +4,8 @@ import { createJob } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+export const fetchCache = "force-no-store";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -64,3 +66,11 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ job_id: jobId, message: "Video creation started" });
 }
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};
