@@ -2,7 +2,7 @@
 
 Dub any video into 22 languages with AI-powered transcription, translation, voice synthesis and lip sync.
 
-Built by: Siddhesh Patil — MS Computer Science, DePaul University, Chicago
+Built by: Siddhesh Patil — MS in Artificial Intelligence, DePaul University, Chicago
 
 ---
 
@@ -168,6 +168,25 @@ Go to http://localhost:3000
 
 ---
 
+## Tests
+
+```bash
+cd backend
+pip install -r requirements.txt pytest
+python -m pytest -q
+```
+
+The backend tests stub the AI pipelines and cover job creation, status polling, downloads, file type checks, and upload path safety. GitHub Actions runs them on every push, along with the frontend type check, lint, and the backend Docker build.
+
+To run the backend in Docker:
+
+```bash
+docker build -t voiceoverai-backend backend
+docker run -p 8000:8000 --env-file .env.local voiceoverai-backend
+```
+
+---
+
 ## Pricing Plans
 
 Starter — $29 per month — 30 minutes — standard voice — 5 languages
@@ -191,7 +210,7 @@ Studio  — $299 per month — unlimited — all features — API access
 
 ## About the Builder
 
-Built by Siddhesh Patil, MS Computer Science student at DePaul University, Chicago.
+Built by Siddhesh Patil, MS in Artificial Intelligence student at DePaul University, Chicago.
 
 Background: Machine Learning, Computer Vision, NLP, RAG pipelines, LangGraph agents, FastAPI, Next.js, AWS.
 
