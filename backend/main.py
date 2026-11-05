@@ -26,7 +26,8 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env.local")
 # ── Redis connection ──
 try:
     import redis
-    redis_client = redis.Redis(host="localhost", port=6379,
+    redis_client = redis.Redis(host=os.getenv("REDIS_HOST", "localhost"),
+                               port=int(os.getenv("REDIS_PORT", "6379")),
                                db=0, decode_responses=True)
     redis_client.ping()
     REDIS_AVAILABLE = True
@@ -35,6 +36,28 @@ except Exception:
     redis_client = None
     REDIS_AVAILABLE = False
     print("⚠️  Redis not available — using in-memory store (dev mode)")
+
+# ── Upload path safety ──
+# job_id and the file name both come from the request, and both end up in a
+# file path, so they are checked before use.
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+def safe_job_id(job_id: str | None) -> str:
+    """Returns a new UUID, or the given one if it is a valid UUID. Rejects anything else."""
+    if not job_id:
+        return str(uuid.uuid4())
+    try:
+        return str(uuid.UUID(job_id))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid job id.")
+
+
+def safe_extension(filename: str | None, allowed: set, default: str) -> str:
+    ext = Path(filename or "").suffix.lower()
+    return ext if ext in allowed else default
+
 
 # ── In-memory fallback for dev (when Redis isn't running) ──
 IN_MEMORY_STORE: dict = {}
@@ -117,8 +140,8 @@ async def start_dub(
         raise HTTPException(status_code=400, detail="File exceeds 2 GB limit.")
 
     # Save to disk
-    job_id     = job_id or str(uuid.uuid4())
-    ext        = Path(file.filename or "video.mp4").suffix
+    job_id     = safe_job_id(job_id)
+    ext        = safe_extension(file.filename, VIDEO_EXTENSIONS, ".mp4")
     video_path = UPLOAD_DIR / f"{job_id}{ext}"
 
     async with aiofiles.open(video_path, "wb") as f:
@@ -273,8 +296,8 @@ async def start_create(
         raise HTTPException(status_code=400, detail="Please upload a JPG, PNG or WEBP image.")
 
     contents   = await file.read()
-    job_id     = job_id or str(uuid.uuid4())
-    ext        = Path(file.filename or "photo.jpg").suffix
+    job_id     = safe_job_id(job_id)
+    ext        = safe_extension(file.filename, IMAGE_EXTENSIONS, ".jpg")
     image_path = UPLOAD_DIR / f"{job_id}_photo{ext}"
 
     async with aiofiles.open(image_path, "wb") as f:
@@ -396,21 +419,3 @@ async def run_create_pipeline_async(
         job  = json.loads(data) if data else {}
         job.update(status="failed", error=str(e))
         store_set(f"job:{job_id}", json.dumps(job))
-
-
-@app.get("/api/test-did")
-async def test_did():
-    import requests
-    api_key = os.getenv("DID_API_KEY", "")
-    if not api_key:
-        return {"error": "DID_API_KEY not set"}
-    auth = api_key if api_key.startswith("Basic ") else f"Basic {api_key}"
-    try:
-        res = requests.get(
-            "https://api.d-id.com/credits",
-            headers={"Authorization": auth, "accept": "application/json"},
-            timeout=10,
-        )
-        return {"status": res.status_code, "body": res.json()}
-    except Exception as e:
-        return {"error": str(e)}

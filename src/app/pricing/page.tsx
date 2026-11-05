@@ -73,7 +73,7 @@ export default function PricingPage() {
       });
       const data = await res.json();
       if (data.url) {
-        window.location.href = data.url;
+        window.location.assign(data.url);
       } else {
         setError(data.error ?? "Something went wrong");
       }
