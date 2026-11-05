@@ -1,172 +1,133 @@
-# VoiceOverAI — AI-Powered Video Dubbing
+# VoiceOverAI
 
-Dub any video into 22 languages with AI-powered transcription, translation, voice synthesis and lip sync.
+[![CI](https://github.com/Siddhesh-Ai9797/VoiceOverAi/actions/workflows/ci.yml/badge.svg)](https://github.com/Siddhesh-Ai9797/VoiceOverAi/actions/workflows/ci.yml)
 
-Built by: Siddhesh Patil — MS in Artificial Intelligence, DePaul University, Chicago
-
----
-
-## What is VoiceOverAI?
-
-VoiceOverAI is a full-stack SaaS product that lets anyone upload a video and get it dubbed into any language using a fully automated AI pipeline. Built from scratch in a single session using Next.js, FastAPI, and state-of-the-art AI APIs.
-
----
+A full stack SaaS app for AI video. Upload a video and get it dubbed into another language, or upload a photo and a topic and get a talking head video. A Next.js frontend handles sign up, Stripe billing and job history. A FastAPI backend runs the AI pipelines and streams progress back to the browser.
 
 ## Features
 
-- Video upload — drag and drop any video up to 2GB (MP4, MOV, AVI, MKV, WEBM)
-- 22 languages — Hindi, Tamil, Telugu, Bengali, Marathi, Spanish, French, German, Japanese, Mandarin, Korean, Arabic
-- Voice synthesis — ElevenLabs multilingual TTS
-- Voice cloning — matches the original speaker's voice (Pro plan)
-- Transcription — OpenAI Whisper v3 (industry-leading accuracy)
-- Translation — DeepL API (better than Google Translate for long-form content)
-- Video composition — FFmpeg merges dubbed audio back into original video
-- Auth — email and password sign up and sign in with NextAuth.js and JWT
-- Payments — Stripe subscriptions at $29, $99, and $299 per month
-- Dashboard — real job history per user stored in SQLite
-- Protected routes — proxy middleware redirects unauthenticated users
+| Feature | What it does |
+|---|---|
+| Video dubbing | Transcribe, translate, re-voice and re-mux any video up to 2 GB |
+| Photo to video | Write a script with GPT-4o, voice it, and animate a photo with D-ID |
+| 12 languages | Hindi, Tamil, Telugu, Bengali, Marathi, Spanish, French, German, Japanese, Mandarin, Korean, Arabic |
+| Accounts | Email and password sign in with NextAuth and hashed passwords |
+| Billing | Stripe checkout for three monthly plans, with a signed webhook that confirms payment |
+| Live progress | The browser polls each job and shows the current pipeline step |
 
----
+## How it works
 
-## AI Pipeline
+```mermaid
+flowchart LR
+    U[Browser, Next.js on Vercel] -->|upload| N[Next.js API routes]
+    N -->|save job| DB[(Postgres on Neon)]
+    N -->|forward file| B[FastAPI backend]
+    subgraph Dubbing
+        B --> X[FFmpeg: extract audio]
+        X --> W[Whisper: transcribe]
+        W --> D[DeepL: translate]
+        D --> T[OpenAI TTS: new voice]
+        T --> C[FFmpeg: merge with video]
+    end
+    subgraph Photo to video
+        B --> S[GPT-4o: write script]
+        S --> V[OpenAI TTS: voice]
+        V --> ID[D-ID: talking video]
+    end
+    B --> J[(Job status: Redis or memory)]
+    U -->|poll| J
+    N --> ST[Stripe checkout and webhook]
+```
 
-Every dubbing job runs through this 7-step pipeline:
+**Dubbing.** FFmpeg pulls the audio out as 16 kHz mono WAV. Whisper turns speech into text, DeepL translates it, and OpenAI TTS reads it out in the new language. FFmpeg then puts the new audio back over the original video frames without re-encoding them.
 
-Step 1 — Video upload
-Step 2 — FFmpeg extracts audio track (WAV, 16kHz mono)
-Step 3 — OpenAI Whisper v3 transcribes speech to text
-Step 4 — DeepL API translates transcript (timestamp-aware)
-Step 5 — ElevenLabs synthesizes dubbed speech in target language
-Step 6 — FFmpeg composes final video (original frames + dubbed audio)
-Step 7 — Download ready
+**Photo to video.** GPT-4o writes a script about your topic, sized to the length you pick and in the language you choose. OpenAI TTS voices it. The photo is resized and sent to D-ID with the audio, and the backend polls D-ID until the talking video is ready.
 
----
+**Jobs.** Each job runs in the background. Its status and progress live in Redis, or in memory during local development. The frontend polls every 2 seconds and shows each step as it finishes.
 
-## Tech Stack
+**Safety.** Uploads are checked by file type, job IDs must be UUIDs, and only known file extensions are kept, so a request cannot write files outside the upload folder.
 
-### Frontend
-- Next.js 16 with App Router — React framework with server components
-- TypeScript — type safety across the entire codebase
-- Tailwind CSS v4 — utility-first styling
-- NextAuth.js beta — authentication and JWT sessions
-- Stripe.js — payment processing and subscription billing
-- Plus Jakarta Sans and Fira Code — display and mono fonts
+## Plans
 
-### Backend
-- FastAPI — high-performance Python API server
-- Uvicorn — ASGI server for FastAPI
-- OpenAI Whisper v3 — state-of-the-art speech transcription
-- DeepL API — high-quality neural machine translation
-- ElevenLabs — voice synthesis and voice cloning
-- FFmpeg 8.1 — audio extraction and video composition
-- SQLite with better-sqlite3 — user and job persistence
-- bcryptjs — secure password hashing
+| Plan | Price | Minutes per month |
+|---|---|---|
+| Starter | $29 | 30 |
+| Pro | $99 | 180 |
+| Studio | $299 | Unlimited |
 
-### Infrastructure
-- Vercel — frontend deployment
-- Railway — Python backend deployment
-- AWS S3 — cloud video storage
-- Stripe — subscription billing
+## Tech stack
 
----
+| Area | Tools |
+|---|---|
+| Frontend | Next.js App Router, TypeScript, Tailwind CSS, NextAuth |
+| Backend | FastAPI, FFmpeg, Redis |
+| AI | OpenAI Whisper, GPT-4o and TTS, DeepL, D-ID |
+| Data and billing | Postgres on Neon, Stripe |
+| Deployment | Vercel, Render, Docker, GitHub Actions |
 
-## Project Structure
+## Project structure
 
-voiceoverai/
-    src/
-        app/
-            page.tsx                  homepage — upload UI
-            dashboard/
-                page.tsx              server component — fetches real jobs
-                DashboardClient.tsx   client component — renders job table
-            pricing/page.tsx          stripe pricing plans
-            signin/page.tsx           sign in page
-            signup/page.tsx           sign up page
-            success/page.tsx          post-payment success screen
-            not-found.tsx             custom 404 page
-            api/
-                auth/[...nextauth]/   nextauth route handlers
-                dub/route.ts          POST — video upload and job creation
-                jobs/[id]/route.ts    GET  — job status polling
-                checkout/route.ts     POST — stripe checkout session
-                signup/route.ts       POST — user registration
-                webhook/route.ts      POST — stripe payment webhook
-        components/
-            Navbar.tsx                navigation bar with auth state
-            DropZone.tsx              drag and drop video upload
-            LanguagePicker.tsx        12-language selection grid
-            PipelineStatus.tsx        live animated processing screen
-            SessionProvider.tsx       nextauth session context wrapper
-        lib/
-            auth.ts                   nextauth config with sqlite
-            auth.config.ts            edge-safe auth config for proxy
-            db.ts                     sqlite helpers for users and jobs
-            api.ts                    frontend API call functions
-            constants.ts              languages list and pipeline steps
-        proxy.ts                      route protection middleware
-    backend/
-        main.py                       fastapi app and all endpoints
-        pipeline.py                   ai pipeline orchestrator
-        models.py                     pydantic data models
-        requirements.txt              python package list
-    .env.local                        api keys — never committed
-    next.config.ts                    next.js configuration
-    README.md                         this file
+```
+src/
+  app/
+    page.tsx              Upload and dubbing screen
+    create/               Photo to video screen
+    dashboard/            Job history
+    pricing/              Stripe plans
+    signin/, signup/      Auth pages
+    api/
+      dub/, create/       Create jobs and forward files to the backend
+      jobs/[id]/          Job status
+      checkout/           Stripe checkout session
+      webhook/            Stripe webhook
+      auth/, signup/      NextAuth and registration
+  components/             Drop zone, language picker, live pipeline status
+  lib/                    Auth config, database helpers, API client
+backend/
+  main.py                 FastAPI app, job store and endpoints
+  pipeline.py             Dubbing pipeline
+  create_pipeline.py      Photo to video pipeline
+  tests/                  Backend tests
+  Dockerfile              Backend image with FFmpeg
+```
 
----
+## Running it
 
-## Local Development
+You need Node 20, Python 3.11 or newer, and FFmpeg.
 
-### Prerequisites
+Create `.env.local` in the project root:
 
-- macOS or Linux or Windows WSL
-- Node.js 20 or higher
-- Python 3.11 or higher
-- FFmpeg 8 or higher
-- Git
+```
+DATABASE_URL=postgres://...
+OPENAI_API_KEY=...
+DEEPL_API_KEY=...
+DID_API_KEY=...
+STRIPE_SECRET_KEY=...
+STRIPE_WEBHOOK_SECRET=...
+AUTH_SECRET=...
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-### 1. Clone the repo
+Then start both servers:
 
-git clone https://github.com/YOUR_USERNAME/voiceoverai.git
-cd voiceoverai
-
-### 2. Install frontend dependencies
-
+```bash
 npm install
-
-### 3. Set up the Python backend
-
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-### 4. Configure environment variables
-
-Create a .env.local file in the root folder with these keys:
-
-OPENAI_API_KEY=sk-proj-...
-DEEPL_API_KEY=your-deepl-key:fx
-ELEVENLABS_API_KEY=sk_...
-STRIPE_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-AUTH_SECRET=your-random-32-char-secret
-NEXTAUTH_URL=http://localhost:3000
-
-### 5. Run both servers
-
-Terminal 1 — Frontend:
 npm run dev
+```
 
-Terminal 2 — Backend:
-cd backend && source venv/bin/activate && uvicorn main:app --reload --port 8000
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
 
-### 6. Open the app
+Open http://localhost:3000. The backend can also run in Docker:
 
-Go to http://localhost:3000
-
----
+```bash
+docker build -t voiceoverai-backend backend
+docker run -p 8000:8000 --env-file .env.local voiceoverai-backend
+```
 
 ## Tests
 
@@ -176,50 +137,17 @@ pip install -r requirements.txt pytest
 python -m pytest -q
 ```
 
-The backend tests stub the AI pipelines and cover job creation, status polling, downloads, file type checks, and upload path safety. GitHub Actions runs them on every push, along with the frontend type check, lint, and the backend Docker build.
-
-To run the backend in Docker:
-
-```bash
-docker build -t voiceoverai-backend backend
-docker run -p 8000:8000 --env-file .env.local voiceoverai-backend
-```
-
----
-
-## Pricing Plans
-
-Starter — $29 per month — 30 minutes — standard voice — 5 languages
-Pro     — $99 per month — 3 hours — voice cloning — 22 languages — lip sync
-Studio  — $299 per month — unlimited — all features — API access
-
----
+The 10 backend tests stub the AI services and cover job creation, status polling, downloads, file type checks and upload path safety. GitHub Actions runs them on every push, along with the frontend type check, lint and the backend Docker build.
 
 ## Roadmap
 
-- AWS S3 cloud storage for video files
-- LatentSync lip sync powered by GPU
-- Real voice cloning via ElevenLabs Creator plan
-- Google and GitHub OAuth sign in
-- Usage-based billing per minute
-- SRT subtitle file export
-- Batch processing API
-- Mobile app with React Native
+* Update the user's plan and minutes from the Stripe webhook
+* Real voice cloning so the dubbed voice matches the original speaker
+* Lip sync on a GPU
+* S3 storage for uploads and results
+* Subtitle export
+* Google and GitHub sign in
 
----
+## Author
 
-## About the Builder
-
-Built by Siddhesh Patil, MS in Artificial Intelligence student at DePaul University, Chicago.
-
-Background: Machine Learning, Computer Vision, NLP, RAG pipelines, LangGraph agents, FastAPI, Next.js, AWS.
-
-Previous experience: AI intern at Innova Analytics — built fault detection models on industrial sensor data, anomaly detection pipelines, and computer vision systems.
-
-This entire product — dev environment setup, UI design system, AI pipeline, authentication, payments — was built from scratch in a single focused session.
-
----
-
-## License
-
-MIT — free to fork, build on, and ship.
+Siddhesh Patil, MS in Artificial Intelligence, DePaul University
